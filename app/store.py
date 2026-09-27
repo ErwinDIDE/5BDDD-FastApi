@@ -11,13 +11,13 @@ ENREGISTREMENT_UTILISATEURS = [
         "nom": "Alice Dupont",
         "email": "alice@example.com",
         "telephone": "0601020304",
-        "password": "password123",
+        "motdepasse": "password123",
     },
     {
         "nom": "Bob Martin",
         "email": "bob@example.com",
         "telephone": "0605060708",
-        "password": "securepassword",
+        "motdepasse": "securepassword",
     },
 ]
 
@@ -70,12 +70,12 @@ def reset() -> None:
         identifiantlivre = id_suivant("livre")
         LIVRES[identifiantlivre] = {"id": identifiantlivre, **l}
 
-    # Initialisation d'un emprunt de test (Alice emprunte 1984)
+    # Initialisation d'un emprunt de test
     identifiantemprunt = id_suivant("emprunt")
     EMPRUNTS[identifiantemprunt] = {
         "id": identifiantemprunt,
-        "user_id": 1,
-        "book_id": 2,
+        "utilisateur_id": 1,
+        "livre_id": 2,
         "date_emprunt": date(2026, 3, 1),
         "date_retour": None,
     }
