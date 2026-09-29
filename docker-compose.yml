@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  oracle-db:
+    image: gvenzl/oracle-free:23-slim
+    container_name: oracle_fastapi
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PASSWORD: "password"
+      APP_USER: "app_user"
+      APP_USER_PASSWORD: "password"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+
+volumes:
+  oracle_data:
