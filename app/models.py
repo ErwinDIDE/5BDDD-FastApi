@@ -1,13 +1,15 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Identity
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 class UtilisateurDB(Base):
     __tablename__ = "utilisateurs"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(always=False, start=1), primary_key=True)
     nom = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
+    motdepasse = Column(String(255), nullable=False)
+    telephone = Column(String(20), nullable=True)
 
     emprunts = relationship("EmpruntDB", back_populates="utilisateur")
 
