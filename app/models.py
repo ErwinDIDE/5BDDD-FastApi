@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Identity
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Date, Identity, Sequence
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -13,14 +13,24 @@ class UtilisateurDB(Base):
 
     emprunts = relationship("EmpruntDB", back_populates="utilisateur")
 
+livres_id_seq = Sequence('livres_id_seq', start=1, increment=1)
 
 class LivreDB(Base):
     __tablename__ = "livres"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(
+        Integer, 
+        livres_id_seq, 
+        primary_key=True, 
+        server_default=livres_id_seq.next_value()
+    )
     titre = Column(String(200), nullable=False)
     auteur = Column(String(100), nullable=False)
-    statut = Column(String(20), default="disponible")
+    genre = Column(String(50), nullable=True)
+    date_publication = Column(
+        Date, nullable=True
+    )
+    disponible = Column(Boolean, default=True)
 
     emprunts = relationship("EmpruntDB", back_populates="livre")
 

@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -25,7 +26,9 @@ class LivreCreate(BaseModel):
     titre: str = Field(min_length=1, max_length=200, examples=["Le Comte de Monte-Cristo"])
     auteur: str = Field(min_length=1, max_length=100, examples=["Alexandre Dumas"])
     genre: str = Field(min_length=1, max_length=50, examples=["Aventure"])
-    date_publication: str = Field(examples=["1844-08-28"])
+    date_publication: Optional[
+        date
+    ] = None
 
 
 class LivreResponse(LivreCreate):
