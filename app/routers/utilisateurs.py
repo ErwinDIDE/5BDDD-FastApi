@@ -183,4 +183,4 @@ def supprimer_utilisateur(utilisateur_id: int, db: Session = Depends(get_db)):
 @router.get("/{utilisateur_id}/emprunts", response_model=list[EmpruntResponse])
 def emprunts_utilisateur(utilisateur_id: int, db: Session = Depends(get_db)):
     utilisateur_ou_404(utilisateur_id, db)
-    return db.query(EmpruntDB).filter(EmpruntDB.user_id == utilisateur_id).all()
+    return db.query(EmpruntDB).filter(EmpruntDB.utilisateur_id == utilisateur_id).all()
