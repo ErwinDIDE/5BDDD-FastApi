@@ -1,6 +1,6 @@
 from datetime import date
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 
 
 # UTILISATEUR
@@ -53,16 +53,16 @@ class LivreResponse(LivreCreate):
 # EMPRUNT
 
 class EmpruntCreate(BaseModel):
-    livre_id: int = Field(examples=[1])
+    utilisateur_id: int
+    livre_id: int
 
 
 class EmpruntResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     utilisateur_id: int
     livre_id: int
     date_emprunt: date
-    date_retour: Optional[date] = None
-    statut: str = Field(default="EN_COURS", examples=["EN_COURS"])
-
-    class Config:
-        from_attributes = True
+    date_retour_prevue: date | None = None
+    statut: str = "en_cours"

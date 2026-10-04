@@ -17,7 +17,7 @@ def test_liste_utilisateurs(client):
     r = client.get("/utilisateurs")
     assert r.status_code == 200
     utilisateurs = r.json()
-    assert len(utilisateurs) == 2 
+    assert len(utilisateurs) == 3
     assert utilisateurs[0]["nom"] == "Alice Dupont"
     assert {"id", "nom", "email", "telephone"} <= utilisateurs[0].keys()
     assert "password" not in utilisateurs[0]  # on vérifie que le mot de passe est bien masqué

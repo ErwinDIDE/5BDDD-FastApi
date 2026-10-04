@@ -42,11 +42,11 @@ def test_creer_utilisateur(client, utilisateur_valide):
     r = client.post("/utilisateurs/inscription", json=utilisateur_valide)
     assert r.status_code == 201
     corps = r.json()
-    assert corps["id"] == 3
-    assert corps["nom"] == "Charlie Brown"
+    assert corps["id"] == 4
+    assert corps["nom"] == "Nouvel Utilisateur"
     assert "motdepasse" not in corps
-    assert client.get("/utilisateurs/3").status_code == 200
-    assert len(client.get("/utilisateurs").json()) == 3
+    assert client.get("/utilisateurs/4").status_code == 200
+    assert len(client.get("/utilisateurs").json()) == 4
 
 
 def test_nom_utilisateur_vide_refuse(client, utilisateur_valide):

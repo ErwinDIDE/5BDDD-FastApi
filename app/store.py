@@ -1,4 +1,5 @@
 from datetime import date
+from app.core.security import get_password_hash
 
 UTILISATEURS: dict[int, dict] = {}
 LIVRES: dict[int, dict] = {}
@@ -18,6 +19,12 @@ ENREGISTREMENT_UTILISATEURS = [
         "email": "bob@example.com",
         "telephone": "0605060708",
         "motdepasse": "securepassword",
+    },
+    {
+        "nom": "Charlie Brown",
+        "email": "charlie@example.com",
+        "telephone": "0611223344",
+        "motdepasse": "password123",
     },
 ]
 
@@ -60,10 +67,19 @@ def reset() -> None:
     compteurs["livre"] = 0
     compteurs["emprunt"] = 0
 
-    # Initialisation des utilisateurs
+    # Initialisation des utilisateurs avec hachage du mot de passe
     for u in ENREGISTREMENT_UTILISATEURS:
         identifiantutilisateur = id_suivant("utilisateur")
-        UTILISATEURS[identifiantutilisateur] = {"id": identifiantutilisateur, **u}
+        # On crée une copie pour ne pas altérer le dictionnaire d'origine
+        user_data = u.copy()
+        
+        # Hachage avant le stockage
+        user_data["motdepasse"] = get_password_hash(user_data["motdepasse"])
+        
+        UTILISATEURS[identifiantutilisateur] = {
+            "id": identifiantutilisateur,
+            **user_data,
+        }
 
     # Initialisation des livres
     for l in ENREGISTREMENT_LIVRES:

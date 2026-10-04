@@ -140,7 +140,7 @@ def modifier_utilisateur(
     db_user.nom = utilisateur.nom
     db_user.email = utilisateur.email
     db_user.telephone = utilisateur.telephone
-    db_user.motdepasse = utilisateur.motdepasse
+    db_user.motdepasse = get_password_hash(utilisateur.motdepasse)
 
     db.commit()
     db.refresh(db_user)
@@ -165,7 +165,7 @@ def modifier_utilisateur(
 def supprimer_utilisateur(utilisateur_id: int, db: Session = Depends(get_db)):
     db_user = utilisateur_ou_404(utilisateur_id, db)
     
-    db.query(EmpruntDB).filter(EmpruntDB.user_id == utilisateur_id).delete(synchronize_session=False)
+    db.query(EmpruntDB).filter(EmpruntDB.utilisateur_id == utilisateur_id).delete(synchronize_session=False)
     
     db.delete(db_user)
     db.commit()

@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.security import get_password_hash
 from app.database import Base, engine, get_db
 from app.main import app
 from app.models import LivreDB, UtilisateurDB
@@ -22,9 +23,14 @@ def reinitialiser_db():
     db = next(get_db())
     try:
         for u in ENREGISTREMENT_UTILISATEURS:
-            db.add(UtilisateurDB(**u))
+            u_copy = u.copy()
+            # 🔒 On hache les mots de passe pour que l'auth / login fonctionne dans les tests
+            u_copy["motdepasse"] = get_password_hash(u_copy["motdepasse"])
+            db.add(UtilisateurDB(**u_copy))
+
         for l in ENREGISTREMENT_LIVRES:
             db.add(LivreDB(**l))
+
         db.commit()
     finally:
         db.close()
@@ -39,8 +45,8 @@ def client():
 @pytest.fixture
 def utilisateur_valide():
     return {
-        "nom": "Charlie Brown",
-        "email": "charlie@example.com",
+        "nom": "Nouvel Utilisateur",
+        "email": "nouvelutilisateur@example.com",
         "telephone": "0611223344",
         "motdepasse": "password123",
     }

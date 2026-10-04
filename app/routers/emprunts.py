@@ -1,14 +1,13 @@
 from datetime import date, timedelta
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.security import get_current_user
 from app.database import get_db
 from app.models import EmpruntDB, LivreDB, UtilisateurDB
 from app.schemas import EmpruntCreate, EmpruntResponse
-
-# On importe la dépendance pour récupérer l'utilisateur connecté via le JWT
-from app.core.security import get_current_user
 
 router = APIRouter(prefix="/emprunts", tags=["Emprunts"])
 
@@ -19,8 +18,19 @@ def emprunter_livre(
     db: Session = Depends(get_db),
     current_user: UtilisateurDB = Depends(get_current_user),
 ):
-    # L'utilisateur peut emprunter un livre disponible
-    # On vérifie si le livre existe
+    # 1. Vérification de l'existence de l'utilisateur demandé dans le body
+    user_cible = (
+        db.query(UtilisateurDB)
+        .filter(UtilisateurDB.id == emprunt_in.utilisateur_id)
+        .first()
+    )
+    if not user_cible:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Utilisateur non trouvé.",
+        )
+
+    # 2. Vérification de l'existence du livre
     livre = db.query(LivreDB).filter(LivreDB.id == emprunt_in.livre_id).first()
     if not livre:
         raise HTTPException(
@@ -28,26 +38,26 @@ def emprunter_livre(
             detail="Livre non trouvé.",
         )
 
-    # On vérifie si le livre est disponible
+    # 3. Vérification de la disponibilité du livre
     if not livre.disponible:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ce livre est déjà emprunté.",
         )
 
-    # On crée l'enregistrement d'emprunt
+    # 4. Enregistrement de l'emprunt
     date_emprunt = date.today()
     date_retour_prevue = date_emprunt + timedelta(days=14)
 
     nouvel_emprunt = EmpruntDB(
-        utilisateur_id=current_user.id,
+        utilisateur_id=emprunt_in.utilisateur_id,
         livre_id=livre.id,
         date_emprunt=date_emprunt,
         date_retour_prevue=date_retour_prevue,
-        statut="EN_COURS",
+        statut="en_cours",
     )
 
-    # Mis à jour du statut du livre
+    # Mise à jour du statut du livre
     livre.disponible = False
 
     db.add(nouvel_emprunt)
@@ -61,29 +71,23 @@ def lister_mes_emprunts(
     db: Session = Depends(get_db),
     current_user: UtilisateurDB = Depends(get_current_user),
 ):
-    
-    emprunts = (
+    return (
         db.query(EmpruntDB)
         .filter(EmpruntDB.utilisateur_id == current_user.id)
         .all()
     )
-    return emprunts
 
 
-@router.put("/{emprunt_id}/retour", response_model=EmpruntResponse)
+@router.post("/{emprunt_id}/retour", response_model=EmpruntResponse)
 def retourner_livre(
     emprunt_id: int,
     db: Session = Depends(get_db),
     current_user: UtilisateurDB = Depends(get_current_user),
 ):
-    # On marque un emprunt comme retourné et on rend le livre disponible
-
+    # Recherche de l'emprunt par son ID
     emprunt = (
         db.query(EmpruntDB)
-        .filter(
-            EmpruntDB.id == emprunt_id,
-            EmpruntDB.utilisateur_id == current_user.id,
-        )
+        .filter(EmpruntDB.id == emprunt_id)
         .first()
     )
 
@@ -93,15 +97,14 @@ def retourner_livre(
             detail="Emprunt non trouvé.",
         )
 
-    if emprunt.statut == "RETOURNE":
+    if emprunt.statut in ["RETOURNE", "retourne"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ce livre a déjà été retourné.",
         )
 
-    # Mettre à jour l'emprunt et rendre le livre disponible
+    # Mise à jour du statut et libération du livre
     emprunt.statut = "RETOURNE"
-    emprunt.date_retour_effective = date.today()
 
     livre = db.query(LivreDB).filter(LivreDB.id == emprunt.livre_id).first()
     if livre:
