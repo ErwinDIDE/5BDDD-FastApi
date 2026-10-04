@@ -3,7 +3,8 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
-# --- UTILISATEUR ---
+# UTILISATEUR
+
 class UtilisateurCreate(BaseModel):
     nom: str = Field(min_length=1, max_length=100, examples=["Alice Dupont"])
     email: EmailStr = Field(examples=["alice@example.com"])
@@ -21,14 +22,24 @@ class UtilisateurResponse(BaseModel):
         from_attributes = True
 
 
-# --- LIVRE ---
+# TOKEN & AUTHENTIFICATION (JWT)
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+
+# LIVRE
+
 class LivreCreate(BaseModel):
     titre: str = Field(min_length=1, max_length=200, examples=["Le Comte de Monte-Cristo"])
     auteur: str = Field(min_length=1, max_length=100, examples=["Alexandre Dumas"])
     genre: str = Field(min_length=1, max_length=50, examples=["Aventure"])
-    date_publication: Optional[
-        date
-    ] = None
+    date_publication: Optional[date] = None
 
 
 class LivreResponse(LivreCreate):
@@ -39,13 +50,19 @@ class LivreResponse(LivreCreate):
         from_attributes = True
 
 
-# --- EMPRUNT ---
+# EMPRUNT
+
+class EmpruntCreate(BaseModel):
+    livre_id: int = Field(examples=[1])
+
+
 class EmpruntResponse(BaseModel):
     id: int
     utilisateur_id: int
     livre_id: int
     date_emprunt: date
-    date_retour: date | None = None
+    date_retour: Optional[date] = None
+    statut: str = Field(default="EN_COURS", examples=["EN_COURS"])
 
     class Config:
         from_attributes = True

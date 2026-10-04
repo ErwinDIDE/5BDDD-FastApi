@@ -83,13 +83,15 @@ def inscrire_utilisateur(utilisateur: UtilisateurCreate, db: Session = Depends(g
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Cet email est déjà utilisé"
         )
-    
+    mot_de_passe_hache = get_password_hash(utilisateur.motdepasse)
+
     nouveau_user = UtilisateurDB(
         nom=utilisateur.nom,
         email=utilisateur.email,
         telephone=utilisateur.telephone,
-        motdepasse=utilisateur.motdepasse
+        motdepasse=mot_de_passe_hache
     )
+    
     db.add(nouveau_user)
     db.commit()
     db.refresh(nouveau_user)

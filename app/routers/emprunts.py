@@ -1,73 +1,112 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from datetime import date, timedelta
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
-from app import store
-from app.schemas import LivreCreate, LivreResponse
+from app.database import get_db
+from app.models import EmpruntDB, LivreDB, UtilisateurDB
+from app.schemas import EmpruntCreate, EmpruntResponse
 
-router = APIRouter(prefix="/livres", tags=["livres"])
+# On importe la dépendance pour récupérer l'utilisateur connecté via le JWT
+from app.core.security import get_current_user
 
-
-def livre_ou_404(livre_id: int) -> dict:
-    livre = store.LIVRES.get(livre_id)
-    if livre is None:
-        raise HTTPException(status_code=404, detail="Livre introuvable")
-    return livre
+router = APIRouter(prefix="/emprunts", tags=["Emprunts"])
 
 
-@router.get("", response_model=list[LivreResponse])
-def lister_livres(
-    titre: str | None = Query(default=None),
-    auteur: str | None = Query(default=None),
-    genre: str | None = Query(default=None)
+@router.post("", response_model=EmpruntResponse, status_code=status.HTTP_201_CREATED)
+def emprunter_livre(
+    emprunt_in: EmpruntCreate,
+    db: Session = Depends(get_db),
+    current_user: UtilisateurDB = Depends(get_current_user),
 ):
-    livres = list(store.LIVRES.values())
-    if titre:
-        livres = [l for l in livres if titre.lower() in l["titre"].lower()]
-    if auteur:
-        livres = [l for l in livres if auteur.lower() in l["auteur"].lower()]
-    if genre:
-        livres = [l for l in livres if genre.lower() in l["genre"].lower()]
-    return livres
+    # L'utilisateur peut emprunter un livre disponible
+    # On vérifie si le livre existe
+    livre = db.query(LivreDB).filter(LivreDB.id == emprunt_in.livre_id).first()
+    if not livre:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Livre non trouvé.",
+        )
+
+    # On vérifie si le livre est disponible
+    if not livre.disponible:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ce livre est déjà emprunté.",
+        )
+
+    # On crée l'enregistrement d'emprunt
+    date_emprunt = date.today()
+    date_retour_prevue = date_emprunt + timedelta(days=14)
+
+    nouvel_emprunt = EmpruntDB(
+        utilisateur_id=current_user.id,
+        livre_id=livre.id,
+        date_emprunt=date_emprunt,
+        date_retour_prevue=date_retour_prevue,
+        statut="EN_COURS",
+    )
+
+    # Mis à jour du statut du livre
+    livre.disponible = False
+
+    db.add(nouvel_emprunt)
+    db.commit()
+    db.refresh(nouvel_emprunt)
+    return nouvel_emprunt
 
 
-@router.get("/{livre_id}", response_model=LivreResponse)
-def lire_livre(livre_id: int):
-    return livre_ou_404(livre_id)
-
-
-@router.post("", response_model=LivreResponse, status_code=status.HTTP_201_CREATED)
-def ajouter_livre(livre: LivreCreate):
-    identifiantlivre = store.id_suivant("livre")
-    nouveau = {
-        "id": identifiantlivre,
-        "disponible": True,
-        **livre.model_dump()
-    }
-    store.LIVRES[identifiantlivre] = nouveau
-    return nouveau
-
-
-@router.put("/{livre_id}", response_model=LivreResponse)
-def modifier_livre(livre_id: int, livre: LivreCreate):
-    livre_existant = livre_ou_404(livre_id)
+@router.get("/mes-emprunts", response_model=List[EmpruntResponse])
+def lister_mes_emprunts(
+    db: Session = Depends(get_db),
+    current_user: UtilisateurDB = Depends(get_current_user),
+):
     
-    store.LIVRES[livre_id] = {
-        "id": livre_id,
-        "disponible": livre_existant.get("disponible", True),
-        **livre.model_dump()
-    }
-    return store.LIVRES[livre_id]
+    emprunts = (
+        db.query(EmpruntDB)
+        .filter(EmpruntDB.utilisateur_id == current_user.id)
+        .all()
+    )
+    return emprunts
 
 
-@router.delete("/{livre_id}", status_code=status.HTTP_204_NO_CONTENT)
-def supprimer_livre(livre_id: int):
-    livre_ou_404(livre_id)
-    del store.LIVRES[livre_id]
-    
-    # Nettoyage des emprunts associés à ce livre
-    emprunts_a_supprimer = [
-        identifiantemprunt for identifiantemprunt, emprunt in store.EMPRUNTS.items() if emprunt["livre_id"] == livre_id
-    ]
-    for identifiantemprunt in emprunts_a_supprimer:
-        del store.EMPRUNTS[identifiantemprunt]
-        
-    return None
+@router.put("/{emprunt_id}/retour", response_model=EmpruntResponse)
+def retourner_livre(
+    emprunt_id: int,
+    db: Session = Depends(get_db),
+    current_user: UtilisateurDB = Depends(get_current_user),
+):
+    # On marque un emprunt comme retourné et on rend le livre disponible
+
+    emprunt = (
+        db.query(EmpruntDB)
+        .filter(
+            EmpruntDB.id == emprunt_id,
+            EmpruntDB.utilisateur_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not emprunt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Emprunt non trouvé.",
+        )
+
+    if emprunt.statut == "RETOURNE":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ce livre a déjà été retourné.",
+        )
+
+    # Mettre à jour l'emprunt et rendre le livre disponible
+    emprunt.statut = "RETOURNE"
+    emprunt.date_retour_effective = date.today()
+
+    livre = db.query(LivreDB).filter(LivreDB.id == emprunt.livre_id).first()
+    if livre:
+        livre.disponible = True
+
+    db.commit()
+    db.refresh(emprunt)
+    return emprunt
