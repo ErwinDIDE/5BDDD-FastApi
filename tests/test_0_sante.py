@@ -9,7 +9,7 @@ def test_liste_livres(client):
     assert r.status_code == 200
     livres = r.json()
     assert len(livres) == 3 
-    assert livres[0]["titre"] == "Le Comte de Monte-Cristo"
+    assert livres[0]["titre"] == "Le Petit Prince"
     assert {"id", "titre", "auteur", "disponible"} <= livres[0].keys()
 
 

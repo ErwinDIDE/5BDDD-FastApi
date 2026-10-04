@@ -19,7 +19,7 @@ def livre_ou_404(livre_id: int, db: Session) -> LivreDB:
     livre = db.get(LivreDB, livre_id)
     if livre is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="LivreDB introuvable"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Livre introuvable"
         )
     return livre
 

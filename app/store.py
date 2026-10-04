@@ -23,24 +23,24 @@ ENREGISTREMENT_UTILISATEURS = [
 
 ENREGISTREMENT_LIVRES = [
     {
-        "titre": "Le Comte de Monte-Cristo",
-        "auteur": "Alexandre Dumas",
-        "genre": "Aventure",
-        "date_publication": "1844-08-28",
+        "titre": "Le Petit Prince",
+        "auteur": "Antoine de Saint-Exupéry",
+        "genre": "Conte",
+        "date_publication": date(1943, 4, 6),
         "disponible": True,
     },
     {
         "titre": "1984",
         "auteur": "George Orwell",
         "genre": "Dystopie",
-        "date_publication": "1949-06-08",
+        "date_publication": date(1949, 6, 8),
         "disponible": False,
     },
     {
-        "titre": "Dune",
-        "auteur": "Frank Herbert",
-        "genre": "Science-Fiction",
-        "date_publication": "1965-08-01",
+        "titre": "L'Étranger",
+        "auteur": "Albert Camus",
+        "genre": "Roman",
+        "date_publication": date(1942, 5, 19),
         "disponible": True,
     },
 ]

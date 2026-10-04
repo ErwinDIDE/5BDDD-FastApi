@@ -1,14 +1,39 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import store
+from app.database import Base, engine, get_db
 from app.main import app
+from app.models import LivreDB, UtilisateurDB
+from app.store import ENREGISTREMENT_LIVRES, ENREGISTREMENT_UTILISATEURS
+
+
+# @pytest.fixture(autouse=True)
+# def reinitialiser_store():
+#     # Réinitialise le store avant chaque test
+#     store.reset()
+
+@pytest.fixture(autouse=True)
+def reinitialiser_db():
+    # 1. On vide et on re-crée toutes les tables SQLite
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+    # 2. On injecte les données initiales requises par les tests
+    db = next(get_db())
+    try:
+        for u in ENREGISTREMENT_UTILISATEURS:
+            db.add(UtilisateurDB(**u))
+        for l in ENREGISTREMENT_LIVRES:
+            db.add(LivreDB(**l))
+        db.commit()
+    finally:
+        db.close()
 
 
 @pytest.fixture
 def client():
-    store.reset()
-    return TestClient(app)
+    with TestClient(app) as c:
+        yield c
 
 
 @pytest.fixture

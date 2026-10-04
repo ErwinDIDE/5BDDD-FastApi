@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.security import get_password_hash
 from app.database import get_db
 from app.models import UtilisateurDB, EmpruntDB
 from app.schemas import UtilisateurCreate, UtilisateurResponse, EmpruntResponse
@@ -91,7 +92,7 @@ def inscrire_utilisateur(utilisateur: UtilisateurCreate, db: Session = Depends(g
         telephone=utilisateur.telephone,
         motdepasse=mot_de_passe_hache
     )
-    
+
     db.add(nouveau_user)
     db.commit()
     db.refresh(nouveau_user)
